@@ -1,16 +1,10 @@
 [package]
-name = "pseudosave"
+name = "dumpsave"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
-[workspace]
-members = [ "dumpsave" ]
-
-
 [dependencies]
+clap = { version = "4.4.7", features = ["derive"] }
 gvas = { git = "https://github.com/localcc/gvas.git", rev = "8b34e03" }
-lazy_static = "1.4.0"
-native-windows-derive = "1.0.5"
-native-windows-gui = "1.0.13"
