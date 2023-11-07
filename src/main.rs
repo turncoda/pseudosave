@@ -12,6 +12,7 @@ use std::fs::File;
 use gvas::GvasFile;
 use gvas::properties::str_property::StrProperty;
 use gvas::properties::Property;
+use std::path::Path;
 
 const PK_LEVEL_NAME: &str = "lastSavedZoneSpawnIn";
 lazy_static!{
@@ -102,19 +103,29 @@ impl App {
         is_changed
     }
 
-    fn write_backup_file(&self) {
+    fn log(&self, msg: &str) {
+        self.log_box.appendln(msg);
     }
 
     fn write_file(&self) {
         if let Some(sav) = self.save_file.borrow_mut().as_mut() {
             if !self.update_save_file(sav) {
-                self.log_box.appendln("No change detected.");
+                self.log("No change detected.");
                 return;
             }
-            let file_name = self.file_name.text();
-            let mut file = File::create(file_name.as_str()).unwrap();
+            let file_path_string = self.file_name.text().to_string();
+            let file_path = Path::new(&file_path_string);
+            let backup_file_path_string = format!("{}.bak", file_path_string);
+            let backup_file_path = Path::new(&backup_file_path_string);
+            if !backup_file_path.exists() {
+                self.log(&format!("Created backup copy: {}", backup_file_path.display()));
+                std::fs::copy(&file_path, &backup_file_path).unwrap();
+            } else {
+                self.log(&format!("Backup copy exists, leaving it as is: {}", backup_file_path_string));
+            }
+            let mut file = File::create(file_path).unwrap();
             let _ = sav.write(&mut file);
-            self.log_box.appendln(&format!("Wrote to {}", file_name));
+            self.log(&format!("Wrote to: {}", file_path_string));
         }
     }
 
