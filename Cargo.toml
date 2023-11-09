@@ -15,3 +15,6 @@ gvas = { git = "https://github.com/localcc/gvas.git", rev = "8b34e03" }
 lazy_static = "1.4.0"
 native-windows-derive = "1.0.5"
 native-windows-gui = "1.0.13"
+
+[build-dependencies]
+winres = "0.1.12"

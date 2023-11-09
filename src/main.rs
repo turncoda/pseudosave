@@ -19,6 +19,7 @@ use gvas::GvasFile;
 use std::fs::File;
 use std::path::Path;
 
+const ICON: &[u8] = include_bytes!("assets/crystal.ico");
 const PK_LEVEL_NAME: &str = "lastSavedZoneSpawnIn";
 const UPGRADE_NAMES: [&str; 21] = [
     "attack",
@@ -238,8 +239,10 @@ impl App {
 fn main() {
     nwg::init().expect("Failed to init Native Windows GUI");
     nwg::Font::set_global_family("Segoe UI").expect("Failed to set default font");
+    let icon = nwg::Icon::from_bin(ICON).unwrap();
 
     let mut _app = App::build_ui(Default::default()).expect("Failed to build UI");
+    _app.window.set_icon(Some(&icon));
     for upgrade_name in UPGRADE_NAMES {
         let mut upgrade = Upgrade::default();
         upgrade.name = upgrade_name.to_string();

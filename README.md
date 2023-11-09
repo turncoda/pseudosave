@@ -1,6 +1,8 @@
 # Pseudoregalia Save File Editor
 
-_Very untested. Use at your own risk._
+_Unstable software. Use at your own risk._
+
+![Pseudoregalia save crystal icon](src/assets/crystal.ico)
 
 ### Features
 
