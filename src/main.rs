@@ -1,28 +1,50 @@
 #![windows_subsystem = "windows"]
 
-use native_windows_gui as nwg;
 use native_windows_derive as nwd;
+use native_windows_gui as nwg;
 
 use lazy_static::lazy_static;
 
 use nwd::NwgUi;
+use nwg::stretch::geometry::{Rect, Size};
+use nwg::stretch::style::{Dimension, FlexDirection, FlexWrap};
 use nwg::NativeUi;
-use std::env;
 use std::cell::RefCell;
-use nwg::stretch::style::{Dimension, FlexWrap, FlexDirection};
-use nwg::stretch::geometry::{Size, Rect};
+use std::env;
 
-use std::fs::File;
-use gvas::GvasFile;
-use gvas::properties::str_property::StrProperty;
 use gvas::properties::name_property::NameProperty;
+use gvas::properties::str_property::StrProperty;
 use gvas::properties::Property;
+use gvas::GvasFile;
+use std::fs::File;
 use std::path::Path;
 
 const PK_LEVEL_NAME: &str = "lastSavedZoneSpawnIn";
-const UPGRADE_NAMES: [&str; 21] = ["attack", "airKick", "slide", "plunge", "wallRide", "Light", "projectile", "sprint", "powerBoost", "SlideJump", "guard", "chargeAttack", "extraKick", "airRecovery", "mobileHeal", "magicHaste", "HealBoost", "damageBoost", "healthPiece", "magicPiece", "outfitPro"];
-lazy_static!{
-    static ref EMPTY_STR_PROP: Property = Property::from(StrProperty{value: None});
+const UPGRADE_NAMES: [&str; 21] = [
+    "attack",
+    "airKick",
+    "slide",
+    "plunge",
+    "wallRide",
+    "Light",
+    "projectile",
+    "sprint",
+    "powerBoost",
+    "SlideJump",
+    "guard",
+    "chargeAttack",
+    "extraKick",
+    "airRecovery",
+    "mobileHeal",
+    "magicHaste",
+    "HealBoost",
+    "damageBoost",
+    "healthPiece",
+    "magicPiece",
+    "outfitPro",
+];
+lazy_static! {
+    static ref EMPTY_STR_PROP: Property = Property::from(StrProperty { value: None });
 }
 
 #[derive(Default, NwgUi)]
@@ -85,11 +107,12 @@ struct Upgrade {
 }
 
 impl App {
-
     fn open_file(&self) {
         if let Ok(d) = env::current_dir() {
             if let Some(d) = d.to_str() {
-                self.dialog.set_default_folder(d).expect("Failed to set default folder.");
+                self.dialog
+                    .set_default_folder(d)
+                    .expect("Failed to set default folder.");
             }
         }
 
@@ -107,14 +130,31 @@ impl App {
     fn read_file(&self) {
         let mut file = File::open(&self.file_name.text()).unwrap();
         let gvas_file = GvasFile::read(&mut file).unwrap();
-        if let Property::StrProperty(prop) = gvas_file.properties.get(PK_LEVEL_NAME).unwrap_or(&EMPTY_STR_PROP) {
-            self.level_name.set_text(prop.value.as_ref().unwrap_or(&String::new()));
+        if let Property::StrProperty(prop) = gvas_file
+            .properties
+            .get(PK_LEVEL_NAME)
+            .unwrap_or(&EMPTY_STR_PROP)
+        {
+            self.level_name
+                .set_text(prop.value.as_ref().unwrap_or(&String::new()));
             self.level_name.set_readonly(false);
         }
-        let upgrades_map = &gvas_file.properties.get("upgrades").unwrap().get_map().unwrap().value;
+        let upgrades_map = &gvas_file
+            .properties
+            .get("upgrades")
+            .unwrap()
+            .get_map()
+            .unwrap()
+            .value;
         for upgrade_ui in self.upgrades.borrow_mut().iter_mut() {
-            let value = upgrades_map.get(&Property::from(NameProperty{value: upgrade_ui.name.clone()})).unwrap();
-            upgrade_ui.text_input.set_text(&value.get_int().unwrap().value.to_string());
+            let value = upgrades_map
+                .get(&Property::from(NameProperty {
+                    value: upgrade_ui.name.clone(),
+                }))
+                .unwrap();
+            upgrade_ui
+                .text_input
+                .set_text(&value.get_int().unwrap().value.to_string());
             upgrade_ui.text_input.set_readonly(false);
         }
         *self.save_file.borrow_mut() = Some(gvas_file);
@@ -123,19 +163,29 @@ impl App {
     fn update_save_file(&self, gvas_file: &mut GvasFile) -> bool {
         let mut is_changed = false;
 
-        let mut level_name_prop = gvas_file.properties.get(PK_LEVEL_NAME).unwrap_or(&EMPTY_STR_PROP).get_str().unwrap().clone();
+        let mut level_name_prop = gvas_file
+            .properties
+            .get(PK_LEVEL_NAME)
+            .unwrap_or(&EMPTY_STR_PROP)
+            .get_str()
+            .unwrap()
+            .clone();
         let old_level_name = level_name_prop.value.clone().unwrap_or(String::new());
         let new_level_name = self.level_name.text();
         if old_level_name != new_level_name {
             is_changed = true;
             level_name_prop.value.replace(new_level_name);
         }
-        gvas_file.properties.insert(PK_LEVEL_NAME.to_string(), Property::from(level_name_prop));
+        gvas_file
+            .properties
+            .insert(PK_LEVEL_NAME.to_string(), Property::from(level_name_prop));
 
         let upgrades_prop = gvas_file.properties.get_mut("upgrades").unwrap();
         let upgrades_map = &mut upgrades_prop.get_map_mut().unwrap().value;
         for upgrade_ui in self.upgrades.borrow().iter() {
-            let key = Property::from(NameProperty{value: upgrade_ui.name.clone()});
+            let key = Property::from(NameProperty {
+                value: upgrade_ui.name.clone(),
+            });
             let value = i32::from_str_radix(&upgrade_ui.text_input.text(), 10).unwrap();
             let existing_prop = upgrades_map.get_mut(&key).unwrap();
             let existing_value = &mut existing_prop.get_int_mut().unwrap().value;
@@ -163,10 +213,16 @@ impl App {
             let backup_file_path_string = format!("{}.bak", file_path_string);
             let backup_file_path = Path::new(&backup_file_path_string);
             if !backup_file_path.exists() {
-                self.log(&format!("Created backup copy: {}", backup_file_path.display()));
+                self.log(&format!(
+                    "Created backup copy: {}",
+                    backup_file_path.display()
+                ));
                 std::fs::copy(&file_path, &backup_file_path).unwrap();
             } else {
-                self.log(&format!("Backup copy exists, leaving it as is: {}", backup_file_path_string));
+                self.log(&format!(
+                    "Backup copy exists, leaving it as is: {}",
+                    backup_file_path_string
+                ));
             }
             let mut file = File::create(file_path).unwrap();
             let _ = sav.write(&mut file);
@@ -177,7 +233,6 @@ impl App {
     fn exit(&self) {
         nwg::stop_thread_dispatch();
     }
-
 }
 
 fn main() {
@@ -205,9 +260,19 @@ fn main() {
         nwg::FlexboxLayout::builder()
             .parent(&upgrade.frame)
             .child(&upgrade.label)
-            .child_margin(Rect{start: Dimension::Points(8.0), end: Dimension::Undefined, top: Dimension::Undefined, bottom: Dimension::Undefined})
+            .child_margin(Rect {
+                start: Dimension::Points(8.0),
+                end: Dimension::Undefined,
+                top: Dimension::Undefined,
+                bottom: Dimension::Undefined,
+            })
             .child(&upgrade.text_input)
-            .child_margin(Rect{start: Dimension::Undefined, end: Dimension::Points(8.0), top: Dimension::Undefined, bottom: Dimension::Undefined})
+            .child_margin(Rect {
+                start: Dimension::Undefined,
+                end: Dimension::Points(8.0),
+                top: Dimension::Undefined,
+                bottom: Dimension::Undefined,
+            })
             .build(&mut upgrade.layout)
             .unwrap();
         _app.upgrades.borrow_mut().push(upgrade);
@@ -220,11 +285,12 @@ fn main() {
         .auto_spacing(Some(2));
 
     for upgrade in _app.upgrades.borrow().iter() {
-        builder = builder.child(&upgrade.frame).child_min_size(Size{width: Dimension::Points(160.0), height: Dimension::Points(36.0)});
+        builder = builder.child(&upgrade.frame).child_min_size(Size {
+            width: Dimension::Points(160.0),
+            height: Dimension::Points(36.0),
+        });
     }
-    builder
-        .build(&_app.powerups_layout)
-        .unwrap();
+    builder.build(&_app.powerups_layout).unwrap();
 
     nwg::dispatch_thread_events();
 }

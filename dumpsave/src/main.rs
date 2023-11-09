@@ -1,6 +1,6 @@
 use clap::Parser;
-use std::fs::File;
 use gvas::GvasFile;
+use std::fs::File;
 
 /// Simple program to greet a person
 #[derive(Parser, Debug)]
@@ -24,18 +24,34 @@ fn main() {
     let mut file = File::open(args.file).unwrap();
     let gvas_file = GvasFile::read(&mut file).unwrap();
     if args.upgrades_only && args.names_only {
-        let index_map = &gvas_file.properties.get("upgrades").unwrap().get_map().unwrap().value;
+        let index_map = &gvas_file
+            .properties
+            .get("upgrades")
+            .unwrap()
+            .get_map()
+            .unwrap()
+            .value;
         for (k, _) in index_map {
             println!("{}", &k.get_name().unwrap().value);
         }
     } else if !args.upgrades_only && args.names_only {
         panic!();
     } else if args.upgrades_only && !args.names_only {
-        let index_map = &gvas_file.properties.get("upgrades").unwrap().get_map().unwrap().value;
+        let index_map = &gvas_file
+            .properties
+            .get("upgrades")
+            .unwrap()
+            .get_map()
+            .unwrap()
+            .value;
         for (k, v) in index_map {
-            println!("{} {}", &v.get_int().unwrap().value, &k.get_name().unwrap().value);
+            println!(
+                "{} {}",
+                &v.get_int().unwrap().value,
+                &k.get_name().unwrap().value
+            );
         }
-    }else {
+    } else {
         println!("{:#?}", gvas_file);
     }
 }
