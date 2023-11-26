@@ -21,6 +21,7 @@ use std::path::Path;
 
 const ICON: &[u8] = include_bytes!("assets/crystal.ico");
 const PK_LEVEL_NAME: &str = "lastSavedZoneSpawnIn";
+const PK_START_TAG: &str = "spawnPointTag";
 const UPGRADE_NAMES: [&str; 21] = [
     "attack",
     "airKick",
@@ -68,7 +69,7 @@ pub struct App {
     open_btn: nwg::Button,
 
     #[nwg_control(text: "Write", enabled: false)]
-    #[nwg_layout_item(layout: main_layout, col: 1, row: 7, col_span: 3)]
+    #[nwg_layout_item(layout: main_layout, col: 1, row: 8, col_span: 3)]
     #[nwg_events(OnButtonClick: [App::write_file])]
     write_btn: nwg::Button,
 
@@ -84,15 +85,23 @@ pub struct App {
     #[nwg_layout_item(layout: main_layout, col: 1, row: 1, col_span: 4)]
     level_name: nwg::TextInput,
 
+    #[nwg_control(text: PK_START_TAG, h_align: HTextAlign::Right)]
+    #[nwg_layout_item(layout: main_layout, col: 0, row: 2)]
+    start_tag_label: nwg::Label,
+
+    #[nwg_control(readonly: true, placeholder_text: Some("<empty>"))]
+    #[nwg_layout_item(layout: main_layout, col: 1, row: 2, col_span: 4)]
+    start_tag: nwg::TextInput,
+
     #[nwg_control]
-    #[nwg_layout_item(layout: main_layout, col: 0, row: 2, col_span: 5, row_span: 5)]
+    #[nwg_layout_item(layout: main_layout, col: 0, row: 3, col_span: 5, row_span: 5)]
     powerups_frame: nwg::Frame,
 
     #[nwg_layout(parent: powerups_frame)]
     powerups_layout: nwg::FlexboxLayout,
 
     #[nwg_control(readonly: true, flags: "VISIBLE|VSCROLL|AUTOVSCROLL")]
-    #[nwg_layout_item(layout: main_layout, col: 0, row: 8, col_span: 5, row_span: 4)]
+    #[nwg_layout_item(layout: main_layout, col: 0, row: 9, col_span: 5, row_span: 3)]
     log_box: nwg::TextBox,
 
     upgrades: RefCell<Vec<Upgrade>>,
@@ -133,6 +142,15 @@ impl App {
         let gvas_file = GvasFile::read(&mut file).unwrap();
         if let Property::StrProperty(prop) = gvas_file
             .properties
+            .get(PK_START_TAG)
+            .unwrap_or(&EMPTY_STR_PROP)
+        {
+            self.start_tag
+                .set_text(prop.value.as_ref().unwrap_or(&String::new()));
+            self.start_tag.set_readonly(false);
+        }
+        if let Property::StrProperty(prop) = gvas_file
+            .properties
             .get(PK_LEVEL_NAME)
             .unwrap_or(&EMPTY_STR_PROP)
         {
@@ -164,22 +182,30 @@ impl App {
     fn update_save_file(&self, gvas_file: &mut GvasFile) -> bool {
         let mut is_changed = false;
 
-        let mut level_name_prop = gvas_file
-            .properties
-            .get(PK_LEVEL_NAME)
-            .unwrap_or(&EMPTY_STR_PROP)
-            .get_str()
-            .unwrap()
-            .clone();
-        let old_level_name = level_name_prop.value.clone().unwrap_or(String::new());
-        let new_level_name = self.level_name.text();
-        if old_level_name != new_level_name {
-            is_changed = true;
-            level_name_prop.value.replace(new_level_name);
+        for (pk, new_value) in [
+            (PK_LEVEL_NAME, self.level_name.text()),
+            (PK_START_TAG, self.start_tag.text())
+        ] {
+            let mut prop = gvas_file
+                .properties
+                .get(pk)
+                .unwrap_or(&EMPTY_STR_PROP)
+                .get_str()
+                .unwrap()
+                .clone();
+            let old_value = prop.value.clone().unwrap_or(String::new());
+            if old_value != new_value {
+                is_changed = true;
+                prop.value.replace(new_value);
+            }
+            if prop.value == Some("".to_string()) || prop.value == None {
+                gvas_file.properties.remove(pk);
+            } else {
+                gvas_file
+                    .properties
+                    .insert(pk.to_string(), Property::from(prop));
+            }
         }
-        gvas_file
-            .properties
-            .insert(PK_LEVEL_NAME.to_string(), Property::from(level_name_prop));
 
         let upgrades_prop = gvas_file.properties.get_mut("upgrades").unwrap();
         let upgrades_map = &mut upgrades_prop.get_map_mut().unwrap().value;
